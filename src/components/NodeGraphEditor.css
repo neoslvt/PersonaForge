@@ -1,0 +1,128 @@
+.node-graph-editor {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.node-graph-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #888;
+}
+
+.node-graph-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  display: flex;
+  gap: 10px;
+  background: rgba(37, 37, 38, 0.9);
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #3e3e42;
+}
+
+.node-graph-toolbar button {
+  background: #0e639c;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.node-graph-toolbar button:hover {
+  background: #1177bb;
+}
+
+.node-graph-info {
+  margin-left: auto;
+  color: #888;
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.node-graph-toolbar .play-button {
+  background: #4caf50;
+}
+
+.node-graph-toolbar .play-button:hover {
+  background: #45a049;
+}
+
+.node-graph-preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.node-graph-preview-container {
+  width: 90%;
+  max-width: 1200px;
+  height: 90%;
+  max-height: 900px;
+  background: #1e1e1e;
+  border: 2px solid #3e3e42;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.node-graph-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #3e3e42;
+  background: #252526;
+}
+
+.node-graph-preview-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.node-graph-preview-close {
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+  line-height: 1;
+}
+
+.node-graph-preview-close:hover {
+  background: #3e3e42;
+  color: #ffffff;
+}
+
+.node-graph-preview-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
