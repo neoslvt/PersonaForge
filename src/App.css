@@ -1,0 +1,121 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: #252526;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.app-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.settings-button {
+  background: transparent;
+  color: #cccccc;
+  border: 1px solid #3e3e42;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.settings-button:hover {
+  background: #37373d;
+  border-color: #007acc;
+}
+
+.app-tabs {
+  display: flex;
+  background: #2d2d30;
+  border-bottom: 1px solid #3e3e42;
+  padding: 0 10px;
+}
+
+.app-tabs button {
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.app-tabs button:hover {
+  background: #37373d;
+  color: #ffffff;
+}
+
+.app-tabs button.active {
+  color: #007acc;
+  border-bottom-color: #007acc;
+  background: #1e1e1e;
+}
+
+.app-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+button {
+  font-family: inherit;
+}
+
+button:focus {
+  outline: 2px solid #007acc;
+  outline-offset: 2px;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  background: #3c3c3c;
+  color: #cccccc;
+  border: 1px solid #3e3e42;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+input:focus,
+textarea:focus {
+  outline: 1px solid #007acc;
+  border-color: #007acc;
+}
+

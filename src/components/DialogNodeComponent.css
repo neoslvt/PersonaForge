@@ -1,0 +1,124 @@
+.dialog-node {
+  background: #2d2d30;
+  border: 2px solid #3e3e42;
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dialog-node-npc {
+  border-color: #4a9eff;
+}
+
+.dialog-node-player {
+  border-color: #4ec9b0;
+}
+
+.dialog-node-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dialog-node-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.dialog-node-speaker,
+.dialog-node-character {
+  background: #3c3c3c;
+  color: #cccccc;
+  border: 1px solid #3e3e42;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dialog-node-character {
+  flex: 1;
+  min-width: 120px;
+}
+
+.dialog-node-generate,
+.dialog-node-add-response,
+.dialog-node-delete {
+  background: #0e639c;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.dialog-node-generate:hover,
+.dialog-node-add-response:hover {
+  background: #1177bb;
+}
+
+.dialog-node-add-response {
+  background: #4ec9b0;
+}
+
+.dialog-node-add-response:hover {
+  background: #5dd5c1;
+}
+
+.dialog-node-delete {
+  background: #d32f2f;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+}
+
+.dialog-node-delete:hover {
+  background: #b71c1c;
+}
+
+.dialog-node-text {
+  color: #cccccc;
+  font-size: 13px;
+  line-height: 1.4;
+  min-height: 40px;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: text;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dialog-node-text:hover {
+  background: #37373d;
+}
+
+.dialog-node-textarea {
+  width: 100%;
+  min-height: 60px;
+  background: #1e1e1e;
+  color: #cccccc;
+  border: 1px solid #007acc;
+  border-radius: 4px;
+  padding: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.dialog-node-textarea:focus {
+  outline: none;
+  border-color: #007acc;
+}
+
