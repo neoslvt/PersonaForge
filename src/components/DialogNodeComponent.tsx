@@ -1,9 +1,11 @@
 import { useCallback, useState, useEffect, useRef } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
-import { DialogNode } from '../types/models'
+import { DialogNode, Emotion } from '../types/models'
 import { useDialogStore } from '../store/dialogStore'
 import { createDialogNode } from '../utils/dialogUtils'
 import './DialogNodeComponent.css'
+
+const EMOTIONS: Emotion[] = ['excited', 'horny', 'flirt', 'very happy', 'happy cry', 'shy', 'happy', 'neutral', 'questioning', 'thinking', 'surprised', 'confused', 'disappointed', 'angry', 'little sad', 'sad', 'cry']
 
 interface DialogNodeData {
   node: DialogNode
@@ -51,6 +53,20 @@ export default function DialogNodeComponent({ data, id }: NodeProps<DialogNodeDa
   const handleCharacterChange = useCallback(
     (characterId: string) => {
       updateNode(id, { characterId: characterId || undefined })
+    },
+    [id, updateNode]
+  )
+
+  const handleShowAvatarChange = useCallback(
+    (showAvatar: boolean) => {
+      updateNode(id, { showAvatar, emotion: showAvatar ? (node.emotion || 'neutral') : undefined })
+    },
+    [id, node.emotion, updateNode]
+  )
+
+  const handleEmotionChange = useCallback(
+    (emotion: Emotion) => {
+      updateNode(id, { emotion })
     },
     [id, updateNode]
   )
@@ -114,19 +130,48 @@ export default function DialogNodeComponent({ data, id }: NodeProps<DialogNodeDa
           <option value="player">Player</option>
         </select>
         {node.speaker === 'NPC' && (
-          <select
-            value={node.characterId || ''}
-            onChange={(e) => handleCharacterChange(e.target.value)}
-            className="dialog-node-character"
-            title="Select character for this NPC"
-          >
-            <option value="">-- Select Character --</option>
-            {characterList.map((char) => (
-              <option key={char.id} value={char.id}>
-                {char.name}
-              </option>
-            ))}
-          </select>
+          <>
+            <select
+              value={node.characterId || ''}
+              onChange={(e) => handleCharacterChange(e.target.value)}
+              className="dialog-node-character"
+              title="Select character for this NPC"
+            >
+              <option value="">-- Select Character --</option>
+              {characterList.map((char) => (
+                <option key={char.id} value={char.id}>
+                  {char.name}
+                </option>
+              ))}
+            </select>
+            {node.characterId && (
+              <div className="dialog-node-avatar-controls">
+                <label className="dialog-node-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={node.showAvatar || false}
+                    onChange={(e) => handleShowAvatarChange(e.target.checked)}
+                    className="dialog-node-checkbox"
+                  />
+                  Show avatar
+                </label>
+                {node.showAvatar && (
+                  <select
+                    value={node.emotion || 'neutral'}
+                    onChange={(e) => handleEmotionChange(e.target.value as Emotion)}
+                    className="dialog-node-emotion"
+                    title="Select emotion"
+                  >
+                    {EMOTIONS.map((emotion) => (
+                      <option key={emotion} value={emotion}>
+                        {emotion}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+          </>
         )}
         <div className="dialog-node-actions">
           {node.speaker === 'player' && onGenerate && (

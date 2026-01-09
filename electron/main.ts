@@ -32,8 +32,18 @@ ipcMain.handle('fs:readFile', async (_, filePath: string) => {
   return await fs.readFile(filePath, 'utf-8')
 })
 
+ipcMain.handle('fs:readFileBinary', async (_, filePath: string) => {
+  const buffer = await fs.readFile(filePath)
+  // Convert Buffer to base64 string for transmission
+  return buffer.toString('base64')
+})
+
 ipcMain.handle('fs:writeFile', async (_, filePath: string, data: string) => {
   return await fs.writeFile(filePath, data, 'utf-8')
+})
+
+ipcMain.handle('fs:writeFileBinary', async (_, filePath: string, data: Uint8Array) => {
+  return await fs.writeFile(filePath, Buffer.from(data))
 })
 
 ipcMain.handle('fs:readDir', async (_, dirPath: string) => {

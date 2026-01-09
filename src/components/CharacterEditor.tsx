@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useDialogStore } from '../store/dialogStore'
-import { Character } from '../types/models'
+import { useSettingsStore } from '../store/settingsStore'
+import { Character, Emotion } from '../types/models'
 import { storageService } from '../services/storageService'
 import { generateUniqueId } from '../utils/dialogUtils'
+import { ComfyUIService } from '../services/comfyUIService'
 import './CharacterEditor.css'
 
 interface CharacterEditorProps {
@@ -12,10 +14,14 @@ interface CharacterEditorProps {
 }
 
 export default function CharacterEditor({ character, onSave, onCancel }: CharacterEditorProps) {
+  const { comfyUISettings } = useSettingsStore()
   const [name, setName] = useState(character?.name || '')
   const [personality, setPersonality] = useState(character?.personality || '')
   const [visualPrompt, setVisualPrompt] = useState(character?.visualPrompt || '')
   const [imagePath, setImagePath] = useState(character?.imagePath || '')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationProgress, setGenerationProgress] = useState<{ emotion: Emotion; status: string } | null>(null)
+  const isCancelledRef = useRef(false)
 
   useEffect(() => {
     if (character) {
@@ -49,6 +55,63 @@ export default function CharacterEditor({ character, onSave, onCancel }: Charact
       console.error('Error saving character:', error)
       alert('Failed to save character')
     }
+  }
+
+  const handleGenerateAllAvatars = async () => {
+    if (!visualPrompt.trim()) {
+      alert('Please enter a visual prompt to generate avatars')
+      return
+    }
+
+    if (!name.trim()) {
+      alert('Please enter a character name')
+      return
+    }
+
+    if (!comfyUISettings.comfyUIUrl || !comfyUISettings.workflowJSON) {
+      alert('Please configure ComfyUI settings in Settings panel first')
+      return
+    }
+
+    setIsGenerating(true)
+    setGenerationProgress(null)
+    isCancelledRef.current = false
+
+    try {
+      await ComfyUIService.generateAllEmotions(
+        comfyUISettings,
+        name.trim(),
+        visualPrompt.trim(),
+        (emotion, result) => {
+          if (!isCancelledRef.current) {
+            setGenerationProgress({
+              emotion,
+              status: result.success ? 'Success' : `Error: ${result.error || 'Unknown error'}`,
+            })
+          }
+        },
+        () => isCancelledRef.current
+      )
+
+      if (!isCancelledRef.current) {
+        alert('Avatar generation completed! Check the images folder for generated avatars.')
+      }
+    } catch (error) {
+      if (!isCancelledRef.current) {
+        console.error('Avatar generation error:', error)
+        alert(`Failed to generate avatars: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+    } finally {
+      setIsGenerating(false)
+      setGenerationProgress(null)
+      isCancelledRef.current = false
+    }
+  }
+
+  const handleCancelGeneration = () => {
+    isCancelledRef.current = true
+    setIsGenerating(false)
+    setGenerationProgress(null)
   }
 
   return (
@@ -100,6 +163,51 @@ export default function CharacterEditor({ character, onSave, onCancel }: Charact
               placeholder="Path to character image file"
             />
           </div>
+
+          {visualPrompt && name && (
+            <div className="character-editor-field">
+              <label>Avatar Generation</label>
+              <div className="character-editor-avatar-generation">
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="character-editor-generate-btn"
+                    onClick={handleGenerateAllAvatars}
+                    disabled={isGenerating || !visualPrompt.trim() || !name.trim()}
+                  >
+                    {isGenerating ? 'Generating...' : 'Generate All Emotion Avatars'}
+                  </button>
+                  {isGenerating && (
+                    <button
+                      type="button"
+                      className="character-editor-cancel-btn"
+                      onClick={handleCancelGeneration}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+                {generationProgress && (
+                  <div className="character-editor-generation-progress">
+                    Generating: {generationProgress.emotion} - {generationProgress.status}
+                  </div>
+                )}
+                <small>
+                  Generates avatar images for all emotions using the visual prompt above.
+                  Requires ComfyUI to be configured in Settings.
+                </small>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="character-editor-footer">

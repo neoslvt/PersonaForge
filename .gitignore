@@ -27,3 +27,7 @@ dist-electron
 characters/
 *.dialog.json
 
+# Other files
+images/
+audio/
+videos/

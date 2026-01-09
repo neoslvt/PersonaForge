@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useDialogStore } from '../store/dialogStore'
-import { generateNodeContext, getLastNPCCharacterId, getConversationHistory } from '../utils/nodeTree'
+import { generateNodeContext, getLastNPCCharacterId, getConversationHistory, calculateVariables, collectSceneDescriptions } from '../utils/nodeTree'
 import { getAIService } from '../services/aiService'
 import { DialogNode } from '../types/models'
 import { createDialogNode } from '../utils/dialogUtils'
@@ -124,19 +124,91 @@ export default function NodeChatPanel({ nodeId, onClose, onNodeChange }: NodeCha
         return
       }
 
+      // Calculate variables and collect scene descriptions
+      const variables = calculateVariables(
+        updatedDialog.nodes,
+        updatedDialog.rootNodeId,
+        playerNodeId
+      )
+      const sceneDescriptions = collectSceneDescriptions(
+        updatedDialog.nodes,
+        updatedDialog.rootNodeId,
+        playerNodeId
+      )
+
       const aiService = getAIService()
       const response = await aiService.generateNPCResponse(
         context,
         character,
-        currentScene || undefined
+        currentScene || undefined,
+        variables,
+        sceneDescriptions
+      )
+
+      // Detect emotion from the response
+      const detectedEmotion = await aiService.detectEmotion(
+        response,
+        character,
+        variables,
+        sceneDescriptions
       )
 
       const npcNode: DialogNode = createDialogNode('NPC', response, [playerNodeId])
       npcNode.characterId = character.id
+      npcNode.showAvatar = true
+      npcNode.emotion = detectedEmotion as any
       const npcNodeId = npcNode.id
 
       addNode(npcNode)
       linkNodes(playerNodeId, npcNodeId)
+      
+      // Analyze response and create variable nodes if needed
+      const nodeActions = await aiService.analyzeAndCreateNodes(
+        response,
+        character,
+        variables,
+        sceneDescriptions
+      )
+      
+      let lastNodeId = npcNodeId
+      for (const action of nodeActions) {
+        const actionNodeId = `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        let actionNode: DialogNode
+        
+        if (action.type === 'setVariable') {
+          actionNode = {
+            id: actionNodeId,
+            type: 'setVariable',
+            speaker: 'NPC',
+            text: '',
+            variableName: action.variableName,
+            variableValue: action.variableValue,
+            childNodeIds: [],
+            parentNodeIds: [lastNodeId],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          }
+        } else {
+          actionNode = {
+            id: actionNodeId,
+            type: 'changeVariable',
+            speaker: 'NPC',
+            text: '',
+            variableName: action.variableName,
+            variableOperation: action.variableOperation,
+            variableValue: action.variableValue,
+            childNodeIds: [],
+            parentNodeIds: [lastNodeId],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          }
+        }
+        
+        addNode(actionNode)
+        linkNodes(lastNodeId, actionNodeId)
+        lastNodeId = actionNodeId
+      }
+      
       saveToHistory()
 
       const latestDialog = useDialogStore.getState().currentDialog

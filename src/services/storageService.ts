@@ -4,7 +4,9 @@ declare global {
   interface Window {
     electronAPI?: {
       readFile: (path: string) => Promise<string>
+      readFileBinary: (path: string) => Promise<string> // Returns base64 string
       writeFile: (path: string, data: string) => Promise<void>
+      writeFileBinary: (path: string, data: Uint8Array) => Promise<void>
       readDir: (path: string) => Promise<string[]>
       mkdir: (path: string) => Promise<void>
       exists: (path: string) => Promise<boolean>

@@ -10,20 +10,42 @@ import ReactFlow, {
   Background,
   MiniMap,
   NodeTypes,
+  EdgeTypes,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
+import CustomEdge from './CustomEdge'
 import { useDialogStore } from '../store/dialogStore'
 import DialogNodeComponent from './DialogNodeComponent'
+import SetVariableNode from './SetVariableNode'
+import ChangeVariableNode from './ChangeVariableNode'
+import SetBackgroundNode from './SetBackgroundNode'
+import SoundPlayNode from './SoundPlayNode'
+import MusicSetNode from './MusicSetNode'
+import IfStatementNode from './IfStatementNode'
+import SwitchCaseNode from './SwitchCaseNode'
+import SceneDescriptionNode from './SceneDescriptionNode'
 import NodeChatPanel from './NodeChatPanel'
 import LivePreview from './LivePreview'
 import { DialogNode } from '../types/models'
 import { getAIService } from '../services/aiService'
-import { createDialogNode } from '../utils/dialogUtils'
-import { generateNodeContext, getLastNPCCharacterId } from '../utils/nodeTree'
+import { createDialogNode, createSpecialNode } from '../utils/dialogUtils'
+import { generateNodeContext, getLastNPCCharacterId, calculateVariables, collectSceneDescriptions } from '../utils/nodeTree'
 import './NodeGraphEditor.css'
 
 const nodeTypes: NodeTypes = {
   dialogNode: DialogNodeComponent,
+  setVariable: SetVariableNode,
+  changeVariable: ChangeVariableNode,
+  setBackground: SetBackgroundNode,
+  soundPlay: SoundPlayNode,
+  musicSet: MusicSetNode,
+  ifStatement: IfStatementNode,
+  switchCase: SwitchCaseNode,
+  sceneDescription: SceneDescriptionNode,
+}
+
+const edgeTypes: EdgeTypes = {
+  default: CustomEdge,
 }
 
 export default function NodeGraphEditor() {
@@ -33,6 +55,7 @@ export default function NodeGraphEditor() {
     characters,
     addNode,
     linkNodes,
+    unlinkNodes,
     saveToHistory,
     undo,
     redo,
@@ -53,9 +76,14 @@ export default function NodeGraphEditor() {
         y: Math.floor(index / 5) * 150,
       }
       
+      // Determine node type based on node.type field, default to 'dialogNode'
+      const nodeType = node.type && node.type !== 'dialog' 
+        ? node.type 
+        : 'dialogNode'
+      
       return {
         id: node.id,
-        type: 'dialogNode',
+        type: nodeType,
         position: savedPosition || defaultPosition,
         data: { node },
       }
@@ -69,6 +97,38 @@ export default function NodeGraphEditor() {
     
     const edges: Edge[] = []
     Object.values(currentDialog.nodes).forEach((node) => {
+      if (node.type === 'ifStatement') {
+        // For if statements, childNodeIds[0] is true branch, childNodeIds[1] is false branch
+        if (node.childNodeIds[0]) {
+          edges.push({
+            id: `${node.id}-${node.childNodeIds[0]}`,
+            source: node.id,
+            target: node.childNodeIds[0],
+            sourceHandle: 'true',
+          })
+        }
+        if (node.childNodeIds[1]) {
+          edges.push({
+            id: `${node.id}-${node.childNodeIds[1]}`,
+            source: node.id,
+            target: node.childNodeIds[1],
+            sourceHandle: 'false',
+          })
+        }
+      } else if (node.type === 'switchCase' && node.cases) {
+        // For switch cases, each case has its own handle
+        node.cases.forEach((caseItem, index) => {
+          if (caseItem.nodeId) {
+            edges.push({
+              id: `${node.id}-${caseItem.nodeId}`,
+              source: node.id,
+              target: caseItem.nodeId,
+              sourceHandle: `case-${index}`,
+            })
+          }
+        })
+      } else {
+        // For regular nodes, connect all children normally
       node.childNodeIds.forEach((childId) => {
         edges.push({
           id: `${node.id}-${childId}`,
@@ -76,6 +136,7 @@ export default function NodeGraphEditor() {
           target: childId,
         })
       })
+      }
     })
     
     return edges
@@ -85,6 +146,60 @@ export default function NodeGraphEditor() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
   const setNodesRef = useRef(setNodes)
   setNodesRef.current = setNodes
+
+  // Handle edge deletions (when edges are explicitly deleted, e.g., by pressing Delete key or clicking delete button)
+  const onEdgesDelete = useCallback(
+    (deletedEdges: Edge[]) => {
+      deletedEdges.forEach((edge) => {
+        if (edge.source && edge.target) {
+          unlinkNodes(edge.source, edge.target)
+        }
+      })
+      saveToHistory()
+    },
+    [unlinkNodes, saveToHistory]
+  )
+
+  // Handle custom delete edge event from CustomEdge component
+  useEffect(() => {
+    const handleDeleteEdge = (e: CustomEvent) => {
+      const edgeId = e.detail.edgeId
+      const edge = edges.find((ed) => ed.id === edgeId)
+      if (edge && edge.source && edge.target) {
+        // Remove the edge from ReactFlow
+        setEdges((eds) => eds.filter((ed) => ed.id !== edgeId))
+        // Unlink nodes in the store
+        unlinkNodes(edge.source, edge.target)
+        saveToHistory()
+      }
+    }
+
+    window.addEventListener('deleteEdge' as any, handleDeleteEdge as EventListener)
+    return () => {
+      window.removeEventListener('deleteEdge' as any, handleDeleteEdge as EventListener)
+    }
+  }, [edges, setEdges, unlinkNodes, saveToHistory])
+
+  // Enhanced onEdgesChange to also handle deletions from the UI
+  const handleEdgesChange = useCallback(
+    (changes: any[]) => {
+      // Process deletions from edge changes (e.g., when edge is removed via UI interaction)
+      const deletionChanges = changes.filter((change) => change.type === 'remove')
+      if (deletionChanges.length > 0) {
+        deletionChanges.forEach((change) => {
+          const edge = edges.find((e) => e.id === change.id)
+          if (edge && edge.source && edge.target) {
+            unlinkNodes(edge.source, edge.target)
+          }
+        })
+        saveToHistory()
+      }
+      
+      // Call the default handler to update ReactFlow's internal state
+      onEdgesChange(changes)
+    },
+    [edges, onEdgesChange, unlinkNodes, saveToHistory]
+  )
 
   useEffect(() => {
     if (!currentDialog) return
@@ -157,13 +272,35 @@ export default function NodeGraphEditor() {
         nodeId
       ) || parentNode.characterId
       
+      // Calculate variables and collect scene descriptions
+      const variables = calculateVariables(
+        currentDialog.nodes,
+        currentDialog.rootNodeId,
+        nodeId
+      )
+      const sceneDescriptions = collectSceneDescriptions(
+        currentDialog.nodes,
+        currentDialog.rootNodeId,
+        nodeId
+      )
+      
       const aiService = getAIService()
       
       try {
         const response = await aiService.generateNPCResponse(
           context,
           character,
-          currentScene || undefined
+          currentScene || undefined,
+          variables,
+          sceneDescriptions
+        )
+        
+        // Detect emotion from the response
+        const detectedEmotion = await aiService.detectEmotion(
+          response,
+          character,
+          variables,
+          sceneDescriptions
         )
         
         const newNodeId = `node_${Date.now()}`
@@ -176,22 +313,95 @@ export default function NodeGraphEditor() {
           parentNodeIds: [nodeId],
           createdAt: Date.now(),
           updatedAt: Date.now(),
+          showAvatar: true,
+          emotion: detectedEmotion as any,
         }
         
         addNode(newNode)
         linkNodes(nodeId, newNodeId)
+        
+        // Analyze response and create variable nodes if needed
+        const nodeActions = await aiService.analyzeAndCreateNodes(
+          response,
+          character,
+          variables,
+          sceneDescriptions
+        )
+        
+        let lastNodeId = newNodeId
+        const autoCreatedNodes: DialogNode[] = []
+        
+        for (const action of nodeActions) {
+          const actionNodeId = `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          let actionNode: DialogNode
+          
+          if (action.type === 'setVariable') {
+            actionNode = {
+              id: actionNodeId,
+              type: 'setVariable',
+              speaker: 'NPC',
+              text: '',
+              variableName: action.variableName,
+              variableValue: action.variableValue,
+              childNodeIds: [],
+              parentNodeIds: [lastNodeId],
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            }
+          } else {
+            actionNode = {
+              id: actionNodeId,
+              type: 'changeVariable',
+              speaker: 'NPC',
+              text: '',
+              variableName: action.variableName,
+              variableOperation: action.variableOperation,
+              variableValue: action.variableValue,
+              childNodeIds: [],
+              parentNodeIds: [lastNodeId],
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            }
+          }
+          
+          addNode(actionNode)
+          linkNodes(lastNodeId, actionNodeId)
+          autoCreatedNodes.push(actionNode)
+          lastNodeId = actionNodeId
+        }
+        
         saveToHistory()
         
         setNodesRef.current((nds) => {
           const existingNode = nds.find((n) => n.id === newNodeId)
-          if (existingNode) return nds
+          if (existingNode) {
+            // If the dialog node already exists, just add the auto-created nodes
+            const newFlowNodes: Node[] = []
+            let currentY = existingNode.position.y + 150
+            
+            autoCreatedNodes.forEach((actionNode) => {
+              const existingActionNode = nds.find((n) => n.id === actionNode.id)
+              if (!existingActionNode) {
+                newFlowNodes.push({
+                  id: actionNode.id,
+                  type: actionNode.type || 'setVariable',
+                  position: {
+                    x: existingNode.position.x,
+                    y: currentY,
+                  },
+                  data: { node: actionNode },
+                })
+                currentY += 100
+              }
+            })
+            
+            return newFlowNodes.length > 0 ? [...nds, ...newFlowNodes] : nds
+          }
           
           const parentNode = nds.find((n) => n.id === nodeId)
           const parentPosition = parentNode?.position || { x: 0, y: 0 }
           
-          return [
-            ...nds,
-            {
+          const flowNodes: Node[] = [{
               id: newNodeId,
               type: 'dialogNode',
               position: {
@@ -199,9 +409,47 @@ export default function NodeGraphEditor() {
                 y: parentPosition.y + 150,
               },
               data: { node: newNode },
-            },
-          ]
+          }]
+          
+          // Add auto-created nodes
+          let currentY = parentPosition.y + 250
+          autoCreatedNodes.forEach((actionNode) => {
+            flowNodes.push({
+              id: actionNode.id,
+              type: actionNode.type || 'setVariable',
+              position: {
+                x: parentPosition.x,
+                y: currentY,
+              },
+              data: { node: actionNode },
+            })
+            currentY += 100
+          })
+          
+          return [...nds, ...flowNodes]
         })
+        
+        // Add edges for auto-created nodes
+        if (autoCreatedNodes.length > 0) {
+          setEdges((eds) => {
+            const newEdges: Edge[] = []
+            let prevNodeId = newNodeId
+            
+            autoCreatedNodes.forEach((actionNode) => {
+              const edgeId = `${prevNodeId}-${actionNode.id}`
+              if (!eds.find(e => e.id === edgeId)) {
+                newEdges.push({
+                  id: edgeId,
+                  source: prevNodeId,
+                  target: actionNode.id,
+                })
+              }
+              prevNodeId = actionNode.id
+            })
+            
+            return newEdges.length > 0 ? [...eds, ...newEdges] : eds
+          })
+        }
       } catch (error) {
         console.error('Error generating AI response:', error)
       }
@@ -280,12 +528,53 @@ export default function NodeGraphEditor() {
   const onConnect = useCallback(
     (params: Connection) => {
       if (params.source && params.target) {
+        const sourceNode = currentDialog?.nodes[params.source]
+        
+        // For if statement nodes, we need to handle true/false branches
+        if (sourceNode?.type === 'ifStatement' && params.sourceHandle) {
+          // sourceHandle will be "true" or "false"
+          const isTrueBranch = params.sourceHandle === 'true'
+          
+          // Get current children
+          const currentChildren = [...(sourceNode.childNodeIds || [])]
+          
+          // Update the correct branch
+          if (isTrueBranch) {
+            // True branch is at index 0
+            if (currentChildren[0] && currentChildren[0] !== params.target) {
+              // Remove old true branch connection
+              unlinkNodes(params.source, currentChildren[0])
+            }
+            currentChildren[0] = params.target
+          } else {
+            // False branch is at index 1
+            if (currentChildren[1] && currentChildren[1] !== params.target) {
+              // Remove old false branch connection
+              unlinkNodes(params.source, currentChildren[1])
+            }
+            // Ensure array has at least 2 elements
+            while (currentChildren.length < 2) {
+              currentChildren.push('')
+            }
+            currentChildren[1] = params.target
+          }
+          
+          // Update the node with new childNodeIds
+          const { updateNode } = useDialogStore.getState()
+          updateNode(params.source, { childNodeIds: currentChildren.filter(id => id !== '') })
+          
+          // Also update the target node's parentNodeIds
+          linkNodes(params.source, params.target)
+        } else {
+          // For regular nodes, use normal linking
         linkNodes(params.source, params.target)
+        }
+        
         setEdges((eds) => addEdge(params, eds))
         saveToHistory()
       }
     },
-    [linkNodes, setEdges, saveToHistory]
+    [currentDialog, linkNodes, unlinkNodes, setEdges, saveToHistory]
   )
 
   const handleAddNode = useCallback(() => {
@@ -313,6 +602,32 @@ export default function NodeGraphEditor() {
         {
           id: newNode.id,
           type: 'dialogNode',
+          position: newPosition,
+          data: { node: newNode },
+        },
+      ]
+    })
+  }, [currentDialog, addNode, saveToHistory, setNodes])
+
+  const handleAddSpecialNode = useCallback((nodeType: string) => {
+    if (!currentDialog) return
+    
+    const newNode = createSpecialNode(nodeType as any)
+    
+    addNode(newNode)
+    saveToHistory()
+    
+    setNodes((nds) => {
+      const newPosition = {
+        x: (nds.length % 5) * 250,
+        y: Math.floor(nds.length / 5) * 150,
+      }
+      
+      return [
+        ...nds,
+        {
+          id: newNode.id,
+          type: nodeType,
           position: newPosition,
           data: { node: newNode },
         },
@@ -351,12 +666,29 @@ export default function NodeGraphEditor() {
   return (
     <div className="node-graph-editor">
       <div className="node-graph-toolbar">
-        <button onClick={handleAddNode}>Add Node</button>
+        <div className="node-graph-toolbar-group">
+          <button onClick={handleAddNode}>Add Dialog Node</button>
+          <div className="node-graph-dropdown">
+            <button className="node-graph-dropdown-button">Add Special Node ▼</button>
+            <div className="node-graph-dropdown-content">
+              <button onClick={() => handleAddSpecialNode('setVariable')}>Set Variable</button>
+              <button onClick={() => handleAddSpecialNode('changeVariable')}>Change Variable</button>
+              <button onClick={() => handleAddSpecialNode('setBackground')}>Set Background</button>
+              <button onClick={() => handleAddSpecialNode('soundPlay')}>Play Sound</button>
+              <button onClick={() => handleAddSpecialNode('musicSet')}>Set Music</button>
+              <button onClick={() => handleAddSpecialNode('ifStatement')}>If Statement</button>
+              <button onClick={() => handleAddSpecialNode('switchCase')}>Switch Case</button>
+              <button onClick={() => handleAddSpecialNode('sceneDescription')}>Scene Description</button>
+            </div>
+          </div>
+        </div>
+        <div className="node-graph-toolbar-group">
         <button onClick={undo}>Undo (Ctrl+Z)</button>
         <button onClick={redo}>Redo (Ctrl+Y)</button>
         <button onClick={() => setShowPreview(true)} className="play-button">
           ▶ Play
         </button>
+        </div>
         <div className="node-graph-info">
           <span>Connect nodes by dragging from output (bottom) to input (top)</span>
         </div>
@@ -365,13 +697,19 @@ export default function NodeGraphEditor() {
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        onEdgesChange={handleEdgesChange}
+        onEdgesDelete={onEdgesDelete}
         onConnect={onConnect}
         onNodeDragStop={handleNodeDragStop}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         connectionLineStyle={{ stroke: '#007acc', strokeWidth: 2 }}
-        defaultEdgeOptions={{ style: { stroke: '#007acc', strokeWidth: 2 } }}
+        defaultEdgeOptions={{ 
+          type: 'default',
+          style: { stroke: '#007acc', strokeWidth: 2 },
+          deletable: true
+        }}
       >
         <Controls />
         <Background />

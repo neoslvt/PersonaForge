@@ -101,6 +101,43 @@
   min-height: 80px;
 }
 
+.character-editor-avatar-generation {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.character-editor-generate-btn {
+  background: #0e639c;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.character-editor-generate-btn:hover:not(:disabled) {
+  background: #1177bb;
+}
+
+.character-editor-generate-btn:disabled {
+  background: #555;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.character-editor-generation-progress {
+  padding: 8px 12px;
+  background: rgba(14, 99, 156, 0.2);
+  border: 1px solid rgba(14, 99, 156, 0.4);
+  border-radius: 4px;
+  font-size: 13px;
+  color: #4ec9b0;
+}
+
 .character-editor-footer {
   display: flex;
   justify-content: flex-end;

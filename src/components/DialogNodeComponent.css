@@ -122,3 +122,261 @@
   border-color: #007acc;
 }
 
+.dialog-node-avatar-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.dialog-node-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #cccccc;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dialog-node-checkbox {
+  cursor: pointer;
+}
+
+.dialog-node-emotion {
+  background: #3c3c3c;
+  color: #cccccc;
+  border: 1px solid #3e3e42;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.dialog-node-type {
+  color: #cccccc;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: auto;
+}
+
+.dialog-node-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dialog-node-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dialog-node-field label {
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.dialog-node-input,
+.dialog-node-select {
+  background: #1e1e1e;
+  color: #cccccc;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  padding: 6px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.dialog-node-input:focus,
+.dialog-node-select:focus {
+  outline: none;
+  border-color: #007acc;
+}
+
+.dialog-node-input-small {
+  font-size: 11px;
+  padding: 4px;
+}
+
+.dialog-node-variable {
+  border-color: #9c27b0;
+}
+
+.dialog-node-background {
+  border-color: #ff9800;
+}
+
+.dialog-node-sound {
+  border-color: #00bcd4;
+}
+
+.dialog-node-music {
+  border-color: #4caf50;
+}
+
+.dialog-node-if {
+  border-color: #f44336;
+}
+
+.dialog-node-switch {
+  border-color: #ff5722;
+}
+
+.dialog-node-scene {
+  border-color: #9c27b0;
+}
+
+.dialog-node-branches {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #3e3e42;
+}
+
+.dialog-node-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.dialog-node-branch-label {
+  color: #888;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.dialog-node-cases {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dialog-node-cases-header {
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.dialog-node-case-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: #1e1e1e;
+  border-radius: 4px;
+  position: relative;
+}
+
+.dialog-node-case-value {
+  color: #cccccc;
+  font-size: 12px;
+  flex: 1;
+}
+
+.dialog-node-case-remove {
+  background: #d32f2f;
+  color: white;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.dialog-node-case-remove:hover {
+  background: #b71c1c;
+}
+
+.dialog-node-add-case {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.dialog-node-add-button {
+  background: #4ec9b0;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 28px;
+}
+
+.dialog-node-add-button:hover {
+  background: #5dd5c1;
+}
+
+/* Set Background Node Styles */
+.set-background-preview {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.set-background-image-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.set-background-image-preview img {
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.set-background-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.set-background-status.exists {
+  color: #4ec9b0;
+  background: rgba(78, 201, 176, 0.1);
+}
+
+.set-background-status.missing {
+  color: #f48771;
+  background: rgba(244, 135, 113, 0.1);
+}
+
+.set-background-generate-btn {
+  width: 100%;
+  background: #0e639c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s;
+  margin-top: 8px;
+}
+
+.set-background-generate-btn:hover:not(:disabled) {
+  background: #1177bb;
+}
+
+.set-background-generate-btn:disabled {
+  background: #555;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+

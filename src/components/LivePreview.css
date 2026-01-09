@@ -1,24 +1,76 @@
+/* Fullscreen Ren'Py-style Preview */
+.live-preview-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  background: #000;
+  overflow: hidden;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.live-preview-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.live-preview-enter-fullscreen {
+  background: #0e639c;
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.live-preview-enter-fullscreen:hover {
+  background: #1177bb;
+  transform: scale(1.05);
+}
+
 .live-preview {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #1e1e1e;
+  background: #000;
   position: relative;
   overflow: hidden;
 }
 
+.live-preview-fullscreen.live-preview {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .live-preview-scene {
-  flex: 1;
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: #000;
   overflow: hidden;
-  min-height: 200px;
 }
 
 .live-preview-background {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 .live-preview-background-placeholder {
@@ -28,121 +80,52 @@
   align-items: center;
   justify-content: center;
   color: #666;
-  font-size: 16px;
-  background: linear-gradient(135deg, #1e1e1e 0%, #2d2d30 100%);
+  font-size: 24px;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d30 100%);
 }
 
+/* Character Sprites - Ren'Py style (left side) */
 .live-preview-character {
   position: absolute;
-  bottom: 200px;
-  left: 40px;
+  bottom: 0;
+  left: 0;
+  height: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-end;
+  justify-content: flex-start;
   z-index: 10;
-  transition: opacity 0.3s ease;
+  pointer-events: none;
+  padding-left: 40px;
+  padding-bottom: 200px;
 }
 
 .live-preview-character-image {
-  width: 200px;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  background: rgba(0, 0, 0, 0.3);
+  max-height: 80vh;
+  max-width: 40vw;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: bottom left;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.live-preview-character-name {
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 16px;
-  font-weight: 600;
-  backdrop-filter: blur(4px);
-}
-
-/* Conversation History */
-.live-preview-history {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 300px;
-  max-height: calc(100% - 280px);
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 12px;
-  overflow-y: auto;
-  z-index: 5;
-}
-
-.live-preview-history-content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.live-preview-history-message {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-left: 3px solid rgba(255, 255, 255, 0.3);
-}
-
-.live-preview-history-message-npc {
-  border-left-color: #4a9eff;
-}
-
-.live-preview-history-message-player {
-  border-left-color: #4ec9b0;
-  background: rgba(14, 99, 156, 0.2);
-}
-
-.live-preview-history-message-speaker {
-  font-size: 10px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.live-preview-history-message-text {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.live-preview-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #888;
-  font-size: 14px;
-}
-
-/* JRPG-style Dialog Box */
+/* Ren'Py-style Dialog Box */
 .live-preview-dialog-box {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.9) 100%);
-  border-top: 4px solid #fff;
-  padding: 24px 32px;
-  min-height: 200px;
-  max-height: 300px;
+  background: rgba(0, 0, 0, 0.85);
+  border-top: 3px solid rgba(255, 255, 255, 0.3);
+  padding: 24px 40px 32px;
+  min-height: 180px;
+  max-height: 35vh;
   display: flex;
   flex-direction: column;
   z-index: 20;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
 }
 
 .live-preview-dialog-empty {
@@ -154,6 +137,7 @@
   color: rgba(255, 255, 255, 0.7);
   text-align: center;
   gap: 16px;
+  font-size: 18px;
 }
 
 .live-preview-dialog-header {
@@ -162,72 +146,80 @@
 
 .live-preview-dialog-name {
   display: inline-block;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.95);
   color: #000;
-  padding: 6px 16px;
-  border-radius: 4px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 20px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-transform: none;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .live-preview-dialog-text {
   color: #fff;
-  font-size: 20px;
-  line-height: 1.6;
+  font-size: 22px;
+  line-height: 1.7;
   margin-bottom: 16px;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: 'Courier New', monospace;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
   min-height: 60px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .live-preview-dialog-choices {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   margin-top: auto;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .live-preview-dialog-choice {
   background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   color: #fff;
-  padding: 12px 20px;
-  font-size: 18px;
-  font-family: 'Courier New', monospace;
+  padding: 14px 24px;
+  font-size: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
-  border-radius: 4px;
+  border-radius: 6px;
   position: relative;
 }
 
 .live-preview-dialog-choice:hover {
   background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: translateX(8px);
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
 }
 
 .live-preview-dialog-choice:active {
   transform: translateX(4px);
 }
 
-.live-preview-dialog-choice::before {
-  content: '▶';
-  position: absolute;
-  left: -20px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+.live-preview-dialog-advance-hint {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  font-style: italic;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  margin-left: 12px;
 }
 
-.live-preview-dialog-choice:hover::before {
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+}
+  50% {
   opacity: 1;
+  }
 }
 
 .live-preview-dialog-actions {
@@ -235,26 +227,25 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .live-preview-dialog-continue {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.95);
   color: #000;
   border: none;
   padding: 12px 32px;
   font-size: 18px;
   font-weight: 700;
-  font-family: 'Courier New', monospace;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .live-preview-dialog-continue:hover {
-  background: #f0f0f0;
+  background: #fff;
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
@@ -265,52 +256,99 @@
 
 .live-preview-dialog-end {
   color: rgba(255, 255, 255, 0.6);
-  font-size: 16px;
+  font-size: 18px;
   font-style: italic;
-  font-family: 'Courier New', monospace;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 .live-preview-dialog-controls {
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.live-preview-exit-fullscreen {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 8px 16px;
+  font-size: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.live-preview-exit-fullscreen:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+  transform: scale(1.1);
 }
 
 .live-preview-chat-btn {
   background: #0e639c;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   color: #fff;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-family: 'Courier New', monospace;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s ease;
   font-weight: 600;
 }
 
 .live-preview-chat-btn:hover {
   background: #1177bb;
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: scale(1.05);
 }
 
 .live-preview-reset-btn {
   background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.8);
-  padding: 8px 16px;
-  font-size: 14px;
-  font-family: 'Courier New', monospace;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.2s ease;
+  font-weight: 600;
 }
 
 .live-preview-reset-btn:hover {
   background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.4);
   color: #fff;
 }
 
+/* Hide scrollbar for dialog text */
+.live-preview-dialog-text::-webkit-scrollbar {
+  width: 8px;
+}
+
+.live-preview-dialog-text::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.live-preview-dialog-text::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.live-preview-dialog-text::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}

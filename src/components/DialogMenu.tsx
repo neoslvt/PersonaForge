@@ -2,10 +2,11 @@ import { useCallback, useState } from 'react'
 import { useDialogStore } from '../store/dialogStore'
 import { storageService } from '../services/storageService'
 import { createNewDialog } from '../utils/dialogUtils'
+import { exportToRenPy } from '../utils/renpyExport'
 import './DialogMenu.css'
 
 export default function DialogMenu() {
-  const { currentDialog, currentDialogPath, setCurrentDialog, recentDialogs, addScene, setCurrentScene } = useDialogStore()
+  const { currentDialog, currentDialogPath, setCurrentDialog, recentDialogs, addScene, setCurrentScene, characters, scenes } = useDialogStore()
   const [isOpen, setIsOpen] = useState(false)
 
   const handleNewDialog = useCallback(() => {
@@ -173,12 +174,61 @@ export default function DialogMenu() {
       URL.revokeObjectURL(url)
       
       setIsOpen(false)
-      alert('Dialog exported successfully!')
     } catch (error) {
       console.error('Export error:', error)
       alert('Failed to export dialog')
     }
   }, [currentDialog])
+
+  const handleExportRenPy = useCallback(async () => {
+    if (!currentDialog) {
+      alert('No dialog to export')
+      return
+    }
+
+    try {
+      // Generate RenPy script
+      const renpyScript = exportToRenPy(currentDialog, characters, scenes)
+      
+      if (!window.electronAPI) {
+        // Fallback to browser download
+        const blob = new Blob([renpyScript], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `dialog_${currentDialog.id}.rpy`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        URL.revokeObjectURL(url)
+      } else {
+        // Use Electron file dialog
+        const defaultPath = currentDialogPath 
+          ? currentDialogPath.replace(/\.(json|dialog\.json)$/i, '.rpy')
+          : `dialog_${currentDialog.id}.rpy`
+        
+        const result = await window.electronAPI.showSaveDialog({
+          title: 'Export RenPy Script',
+          defaultPath: defaultPath,
+          filters: [
+            { name: 'RenPy Script Files', extensions: ['rpy'] },
+            { name: 'All Files', extensions: ['*'] },
+          ],
+        })
+        
+        if (result.canceled || !result.filePath) return
+        
+        await window.electronAPI.writeFile(result.filePath, renpyScript)
+      }
+      
+      setIsOpen(false)
+    } catch (error) {
+      console.error('RenPy export error:', error)
+      alert('Failed to export RenPy script')
+    }
+  }, [currentDialog, currentDialogPath, characters, scenes])
 
   const handleImport = useCallback(() => {
     const input = document.createElement('input')
@@ -269,6 +319,9 @@ export default function DialogMenu() {
             
             <button onClick={handleExport} className="dialog-menu-item" disabled={!currentDialog}>
               Export JSON...
+            </button>
+            <button onClick={handleExportRenPy} className="dialog-menu-item" disabled={!currentDialog}>
+              Export RenPy...
             </button>
             <button onClick={handleImport} className="dialog-menu-item">
               Import JSON...

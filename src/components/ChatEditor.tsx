@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useDialogStore } from '../store/dialogStore'
-import { nodeTreeToLinearChat, generateNodeContext, getLastNPCCharacterId } from '../utils/nodeTree'
+import { nodeTreeToLinearChat, generateNodeContext, getLastNPCCharacterId, calculateVariables, collectSceneDescriptions } from '../utils/nodeTree'
 import { getAIService } from '../services/aiService'
 import { DialogNode } from '../types/models'
 import './ChatEditor.css'
@@ -92,13 +92,27 @@ export default function ChatEditor() {
       contextNode.id
     ) || parentNode.characterId
     
+    // Calculate variables and collect scene descriptions
+    const variables = calculateVariables(
+      currentDialog.nodes,
+      currentDialog.rootNodeId,
+      contextNode.id
+    )
+    const sceneDescriptions = collectSceneDescriptions(
+      currentDialog.nodes,
+      currentDialog.rootNodeId,
+      contextNode.id
+    )
+    
     const aiService = getAIService()
     
     try {
       const response = await aiService.generateNPCResponse(
         context,
         character,
-        currentScene || undefined
+        currentScene || undefined,
+        variables,
+        sceneDescriptions
       )
       
       const newNodeId = `node_${Date.now()}`

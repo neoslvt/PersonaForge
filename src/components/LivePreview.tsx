@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useDialogStore } from '../store/dialogStore'
-import { getConversationHistory } from '../utils/nodeTree'
+import { getConversationHistory, getAllReachableNodes } from '../utils/nodeTree'
 import { DialogNode } from '../types/models'
 import NodeChatPanel from './NodeChatPanel'
 import './LivePreview.css'
@@ -10,8 +11,59 @@ export default function LivePreview() {
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null)
   const [conversationHistory, setConversationHistory] = useState<DialogNode[]>([])
   const [chatNodeId, setChatNodeId] = useState<string | null>(null)
+  const [currentBackground, setCurrentBackground] = useState<string | null>(null)
+  const [currentMusic, setCurrentMusic] = useState<string | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(true)
+  const previewRef = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  const displayScene = currentScene || (currentDialog?.sceneId ? scenes[currentDialog.sceneId] : null)
+  // Get current background and music from special nodes in the path
+  useEffect(() => {
+    if (!currentDialog || !currentNodeId) {
+      setCurrentBackground(null)
+      setCurrentMusic(null)
+      return
+    }
+
+    const allNodes = getAllReachableNodes(
+      currentDialog.nodes,
+      currentDialog.rootNodeId,
+      currentNodeId
+    )
+
+    // Find the most recent setBackground and musicSet nodes
+    let latestBackground: string | null = null
+    let latestMusic: string | null = null
+    for (const node of allNodes) {
+      if (node.type === 'setBackground' && node.backgroundImage) {
+        latestBackground = node.backgroundImage
+      }
+      if (node.type === 'musicSet' && node.musicFile) {
+        latestMusic = node.musicFile
+      }
+    }
+
+    setCurrentBackground(latestBackground)
+    setCurrentMusic(latestMusic)
+  }, [currentDialog, currentNodeId])
+
+  // Handle music playback
+  useEffect(() => {
+    if (currentMusic && audioRef.current) {
+      audioRef.current.src = currentMusic
+      audioRef.current.loop = true
+      audioRef.current.play().catch(err => {
+        console.warn('Could not play music:', err)
+      })
+    } else if (!currentMusic && audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.src = ''
+    }
+  }, [currentMusic])
+
+  const displayScene = currentBackground 
+    ? { backgroundImagePath: currentBackground, description: '' }
+    : (currentScene || (currentDialog?.sceneId ? scenes[currentDialog.sceneId] : null))
   
   const handleFixRootNode = useCallback(() => {
     if (!currentDialog) return
@@ -55,6 +107,38 @@ export default function LivePreview() {
     }
   }, [currentNode, currentDialog])
 
+  // Calculate choices before handleScreenClick
+  const availableChoices = currentNode && currentDialog
+    ? currentNode.childNodeIds
+        .map(id => currentDialog.nodes[id])
+        .filter(node => node !== undefined)
+    : []
+
+  const playerChoices = availableChoices.filter(node => node.speaker === 'player')
+  const displayChoices = currentNode?.speaker === 'NPC' && playerChoices.length > 0
+    ? playerChoices
+    : availableChoices
+
+  const hasMultipleChoices = displayChoices.length > 1
+  const hasSingleChoice = displayChoices.length === 1 && currentNode?.childNodeIds.length === 1
+  const hasNoChoices = currentNode?.childNodeIds.length === 0
+
+  // Handle click anywhere to advance (Ren'Py style)
+  const handleScreenClick = useCallback((e: React.MouseEvent) => {
+    // Don't advance if clicking on dialog box, choices, or buttons
+    const target = e.target as HTMLElement
+    if (target.closest('.live-preview-dialog-box') || 
+        target.closest('.live-preview-dialog-choice') ||
+        target.closest('button')) {
+      return
+    }
+
+    // Only advance if there's a single choice or no choices
+    if (currentNode && hasSingleChoice && !hasMultipleChoices) {
+      handleContinue()
+    }
+  }, [currentNode, hasSingleChoice, hasMultipleChoices, handleContinue])
+
   const handleChoiceSelect = useCallback((childNodeId: string) => {
     if (!currentDialog) return
     setCurrentNodeId(childNodeId)
@@ -82,25 +166,48 @@ export default function LivePreview() {
     ? characters[currentNode.characterId]
     : null
 
-  const availableChoices = currentNode && currentDialog
-    ? currentNode.childNodeIds
-        .map(id => currentDialog.nodes[id])
-        .filter(node => node !== undefined)
-    : []
-
-  const playerChoices = availableChoices.filter(node => node.speaker === 'player')
-  const displayChoices = currentNode?.speaker === 'NPC' && playerChoices.length > 0
-    ? playerChoices
-    : availableChoices
-
-  const hasMultipleChoices = displayChoices.length > 1
-  const hasSingleChoice = displayChoices.length === 1 && currentNode?.childNodeIds.length === 1
-  const hasNoChoices = currentNode?.childNodeIds.length === 0
-
   const displayCharacter = currentNPCCharacter || currentCharacter
 
-  return (
-    <div className="live-preview">
+  // Get character sprite path with emotion if available
+  const getCharacterSpritePath = () => {
+    if (!displayCharacter?.imagePath) return null
+    
+    // If NPC node has showAvatar and emotion, try to construct emotion-specific sprite path
+    if (currentNode?.speaker === 'NPC' && currentNode.showAvatar && currentNode.emotion) {
+      // Construct emotion-specific path (e.g., images/charactername happy.png)
+      // Character images are saved as "charactername emotionname.png" with spaces
+      const characterName = displayCharacter.name.toLowerCase().trim()
+      const emotion = currentNode.emotion.toLowerCase().trim()
+      const emotionPath = `images/${characterName} ${emotion}.png`
+      
+      // Return emotion-specific path (the image loader will handle fallback to base image if not found)
+      return emotionPath
+    }
+    
+    return displayCharacter.imagePath
+  }
+
+  const characterSpritePath = getCharacterSpritePath()
+
+  // Handle escape key to exit fullscreen
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false)
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [isFullscreen])
+
+  const fullscreenContent = (
+    <>
+      <audio ref={audioRef} loop />
+      <div 
+        ref={previewRef}
+        className="live-preview live-preview-fullscreen"
+        onClick={handleScreenClick}
+      >
       <div className="live-preview-scene">
         {displayScene?.backgroundImagePath ? (
           <img
@@ -114,39 +221,21 @@ export default function LivePreview() {
           </div>
         )}
         
-        {displayCharacter?.imagePath && (
+        {characterSpritePath && currentNode?.speaker === 'NPC' && currentNode.showAvatar && (
           <div className="live-preview-character">
             <img
-              src={displayCharacter.imagePath}
-              alt={displayCharacter.name}
+              src={characterSpritePath}
+              alt={displayCharacter?.name || 'Character'}
               className="live-preview-character-image"
+              style={{
+                opacity: currentNode.showAvatar ? 1 : 0,
+                transition: 'opacity 0.3s ease'
+              }}
             />
-            <div className="live-preview-character-name">{displayCharacter.name}</div>
           </div>
         )}
       </div>
 
-      <div className="live-preview-history">
-        <div className="live-preview-history-content">
-          {conversationHistory.length === 0 ? (
-            <div className="live-preview-empty">No conversation yet</div>
-          ) : (
-            conversationHistory.slice(0, -1).map((node) => (
-              <div
-                key={node.id}
-                className={`live-preview-history-message live-preview-history-message-${node.speaker.toLowerCase()}`}
-              >
-                <div className="live-preview-history-message-speaker">
-                  {node.speaker === 'NPC' 
-                    ? (characters[node.characterId || '']?.name || 'NPC')
-                    : 'You'}
-                </div>
-                <div className="live-preview-history-message-text">{node.text}</div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
       
       <div className="live-preview-dialog-box">
         {!currentDialog ? (
@@ -203,6 +292,9 @@ export default function LivePreview() {
                     >
                       Continue
                     </button>
+                    <div className="live-preview-dialog-advance-hint">
+                      (or click anywhere)
+                    </div>
                   </div>
                 ) : hasNoChoices ? (
                   <div className="live-preview-dialog-actions">
@@ -250,6 +342,9 @@ export default function LivePreview() {
                     >
                       Continue
                     </button>
+                    <div className="live-preview-dialog-advance-hint">
+                      (or click anywhere)
+                    </div>
                   </div>
                 ) : hasNoChoices ? (
                   <div className="live-preview-dialog-actions">
@@ -271,6 +366,13 @@ export default function LivePreview() {
               </>
             )}
             <div className="live-preview-dialog-controls">
+              <button 
+                className="live-preview-exit-fullscreen"
+                onClick={() => setIsFullscreen(false)}
+                title="Exit fullscreen (ESC)"
+              >
+                ✕
+              </button>
               <button 
                 className="live-preview-chat-btn" 
                 onClick={handleOpenChat}
@@ -295,6 +397,23 @@ export default function LivePreview() {
         />
       )}
     </div>
+    </>
   )
+
+  if (!isFullscreen) {
+    return (
+      <div className="live-preview-container">
+        <button 
+          className="live-preview-enter-fullscreen"
+          onClick={() => setIsFullscreen(true)}
+        >
+          Enter Fullscreen Preview
+        </button>
+      </div>
+    )
+  }
+
+  // Render fullscreen preview as a portal to document.body to break out of app layout
+  return createPortal(fullscreenContent, document.body)
 }
 

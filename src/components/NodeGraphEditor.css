@@ -19,10 +19,73 @@
   z-index: 10;
   display: flex;
   gap: 10px;
+  align-items: center;
   background: rgba(37, 37, 38, 0.9);
   padding: 8px;
   border-radius: 4px;
   border: 1px solid #3e3e42;
+}
+
+.node-graph-toolbar-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.node-graph-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.node-graph-dropdown-button {
+  background: #0e639c;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.node-graph-dropdown-button:hover {
+  background: #1177bb;
+}
+
+.node-graph-dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0;
+  background: #252526;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  padding: 4px 0;
+}
+
+.node-graph-dropdown:hover .node-graph-dropdown-content {
+  display: block;
+}
+
+.node-graph-dropdown-content button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: #cccccc;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.node-graph-dropdown-content button:hover {
+  background: #2d2d30;
+  color: #ffffff;
 }
 
 .node-graph-toolbar button {
@@ -124,5 +187,53 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+}
+
+/* Custom Edge Delete Button Styles */
+.edge-button-foreignobject {
+  pointer-events: all;
+  overflow: visible;
+}
+
+.edge-button-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.edge-delete-button {
+  pointer-events: all;
+  background: #dc3545;
+  color: white;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  padding: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.edge-button-wrapper:hover .edge-delete-button,
+.edge-delete-button:hover {
+  opacity: 1;
+  background: #c82333;
+  transform: scale(1.1);
+}
+
+/* Show delete button when edge is selected */
+.react-flow__edge.selected .edge-delete-button {
+  opacity: 1;
 }
 
